@@ -1,0 +1,342 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { EyeIcon, EyeSlashIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../../contexts/AuthContext';
+
+const RegisterPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { register, loading } = useAuth();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    company: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [acceptTerms, setAcceptTerms] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Full name is required';
+    }
+
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (!acceptTerms) {
+      newErrors.terms = 'You must accept the terms and conditions';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    const success = await register({
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      password: formData.password,
+      company: formData.company.trim()
+    });
+
+    if (success) {
+      navigate('/dashboard');
+    }
+  };
+
+  const passwordRequirements = [
+    { text: 'At least 6 characters', met: formData.password.length >= 6 },
+    { text: 'Contains letters', met: /[a-zA-Z]/.test(formData.password) },
+    { text: 'Passwords match', met: formData.password === formData.confirmPassword && formData.confirmPassword.length > 0 }
+  ];
+
+  return (
+    <div className="min-h-screen flex">
+      {/* Left side - Image/Illustration */}
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-blue-600 to-purple-700 relative overflow-hidden">
+        <div className="flex items-center justify-center w-full p-12">
+          <div className="text-center text-white">
+            <h2 className="text-4xl font-bold mb-6">
+              Join Thousands of Businesses
+            </h2>
+            <p className="text-xl text-blue-100 mb-8 max-w-md">
+              Start creating professional invoices today and get paid faster than ever before.
+            </p>
+            <div className="space-y-4 max-w-md">
+              <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                <CheckIcon className="w-6 h-6 text-green-300" />
+                <span className="text-blue-100">Free 14-day trial</span>
+              </div>
+              <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                <CheckIcon className="w-6 h-6 text-green-300" />
+                <span className="text-blue-100">No credit card required</span>
+              </div>
+              <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                <CheckIcon className="w-6 h-6 text-green-300" />
+                <span className="text-blue-100">Setup in under 5 minutes</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-40 h-40 bg-white/5 rounded-full -ml-20 -mt-20"></div>
+        <div className="absolute bottom-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mb-16"></div>
+      </div>
+
+      {/* Right side - Form */}
+      <div className="flex-1 flex flex-col justify-center px-6 py-12 lg:px-8 bg-white">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          {/* Logo */}
+          <div className="flex items-center justify-center space-x-2 mb-8">
+            <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">IV</span>
+            </div>
+            <span className="text-2xl font-bold text-gray-900">HonestInvoice</span>
+          </div>
+
+          <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
+            Create your account
+          </h1>
+          <p className="text-center text-gray-600 mb-8">
+            Sign Up today
+          </p>
+        </div>
+
+        <div className="sm:mx-auto sm:w-full sm:max-w-md">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Full Name */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+                Full name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  errors.name ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter your full name"
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Enter your email"
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Company (Optional) */}
+            <div>
+              <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                Company name <span className="text-gray-500">(optional)</span>
+              </label>
+              <input
+                id="company"
+                name="company"
+                type="text"
+                value={formData.company}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                placeholder="Enter your company name"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 pr-12 ${
+                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Create a password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
+                >
+                  {showPassword ? (
+                    <EyeSlashIcon className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                Confirm password
+              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 pr-12 ${
+                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Confirm your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
+                >
+                  {showConfirmPassword ? (
+                    <EyeSlashIcon className="w-5 h-5 text-gray-400" />
+                  ) : (
+                    <EyeIcon className="w-5 h-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+              )}
+            </div>
+
+            {/* Password Requirements */}
+            {formData.password && (
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Password Requirements:</h4>
+                <div className="space-y-1">
+                  {passwordRequirements.map((req, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <CheckIcon className={`w-4 h-4 ${req.met ? 'text-green-600' : 'text-gray-400'}`} />
+                      <span className={`text-sm ${req.met ? 'text-green-600' : 'text-gray-600'}`}>
+                        {req.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Terms and Conditions */}
+            <div>
+              <label className="flex items-start space-x-3">
+                <input
+                  type="checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className={`mt-1 w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500 ${
+                    errors.terms ? 'border-red-500' : ''
+                  }`}
+                />
+                <span className="text-sm text-gray-600">
+                  I agree to the{' '}
+                  <a href="#" className="text-green-600 hover:text-green-700 font-medium">
+                    Terms of Service
+                  </a>{' '}
+                  and{' '}
+                  <a href="#" className="text-green-600 hover:text-green-700 font-medium">
+                    Privacy Policy
+                  </a>
+                </span>
+              </label>
+              {errors.terms && (
+                <p className="mt-1 text-sm text-red-600">{errors.terms}</p>
+              )}
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 px-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              {loading ? 'Creating account...' : 'Create account'}
+            </button>
+          </form>
+
+          {/* Sign in link */}
+          <p className="mt-8 text-center text-sm text-gray-600">
+            Already have an account?{' '}
+            <Link to="/login" className="font-medium text-green-600 hover:text-green-700">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RegisterPage;

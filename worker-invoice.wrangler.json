@@ -1,0 +1,13 @@
+{
+  "name": "worker-invoice",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-06-20",
+  "type": "javascript",
+  "account_id": "<corymurdoch49@gmail.com>",
+  "workers_dev": true,
+  "routes": [
+    "https://worker-invoice.<your-subdomain>.workers.dev/*"
+  ],
+  "env": {},
+  "bindings": []
+}

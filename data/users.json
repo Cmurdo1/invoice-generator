@@ -1,0 +1,33 @@
+[
+  {
+    "id": "demo-user-id",
+    "email": "demo@HonestInvoice.com",
+    "password": "$2b$10$vhQbcz/A3xpF5y6yo.1q3uQBXzWovldzRCI1P3ryBtD8hL5gnjcnW",
+    "name": "Demo User",
+    "company": "Demo Company Inc.",
+    "role": "user",
+    "subscription": {
+      "plan": "pro",
+      "status": "active",
+      "current_period_start": "2025-06-20T09:42:58.058Z",
+      "current_period_end": "2025-07-20T09:42:58.058Z"
+    },
+    "profile": {
+      "phone": "+1 (555) 123-4567",
+      "address": "123 Demo Street",
+      "city": "Demo City",
+      "state": "Demo State",
+      "zip": "12345",
+      "country": "United States",
+      "logo": null,
+      "invoice_settings": {
+        "default_currency": "USD",
+        "tax_rate": 8.5,
+        "invoice_prefix": "INV",
+        "next_invoice_number": 1001
+      }
+    },
+    "created_at": "2025-06-20T09:42:58.059Z",
+    "updated_at": "2025-06-20T09:42:58.059Z"
+  }
+]
