@@ -1,13 +1,13 @@
 [
   {
-    "id": "demo-user-id",
-    "email": "demo@HonestInvoice.com",
+    "id": "Admin-user-id",
+    "email": "Admin@HonestInvoice.com",
     "password": "$2b$10$vhQbcz/A3xpF5y6yo.1q3uQBXzWovldzRCI1P3ryBtD8hL5gnjcnW",
-    "name": "Demo User",
-    "company": "Demo Company Inc.",
+    "name": "Admin",
+    "company": "Admin Company Inc.",
     "role": "user",
     "subscription": {
-      "plan": "pro",
+      "plan": "Business",
       "status": "active",
       "current_period_start": "2025-06-20T09:42:58.058Z",
       "current_period_end": "2025-07-20T09:42:58.058Z"
@@ -22,7 +22,7 @@
       "logo": null,
       "invoice_settings": {
         "default_currency": "USD",
-        "tax_rate": 8.5,
+        "tax_rate": 0.0,
         "invoice_prefix": "INV",
         "next_invoice_number": 1001
       }

@@ -94,7 +94,7 @@ const RegisterPage: React.FC = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Image/Illustration */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-blue-600 to-purple-700 relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-green-600 to-green-800 relative overflow-hidden">
         <div className="flex items-center justify-center w-full p-12">
           <div className="text-center text-white">
             <h2 className="text-4xl font-bold mb-6">
@@ -106,15 +106,15 @@ const RegisterPage: React.FC = () => {
             <div className="space-y-4 max-w-md">
               <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
                 <CheckIcon className="w-6 h-6 text-green-300" />
-                <span className="text-blue-100">Free 14-day trial</span>
+                <span className="text-green-100">The first known invoice dates back to 3000 BC in Mesopotamia</span>
               </div>
               <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
                 <CheckIcon className="w-6 h-6 text-green-300" />
-                <span className="text-blue-100">No credit card required</span>
+                <span className="text-green-100">Electronic invoices can reduce processing costs by 60-80%</span>
               </div>
               <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
                 <CheckIcon className="w-6 h-6 text-green-300" />
-                <span className="text-blue-100">Setup in under 5 minutes</span>
+                <span className="text-green-100">90% of businesses say faster invoicing improves cash flow</span>
               </div>
             </div>
           </div>
@@ -131,7 +131,7 @@ const RegisterPage: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center justify-center space-x-2 mb-8">
             <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">IV</span>
+              <span className="text-white font-bold">HI</span>
             </div>
             <span className="text-2xl font-bold text-gray-900">HonestInvoice</span>
           </div>

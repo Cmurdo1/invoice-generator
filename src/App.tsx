@@ -1,7 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+
+const queryClient = new QueryClient();
 
 // Components
 import Navbar from './components/layout/Navbar';
@@ -44,7 +47,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 ml-64 p-8">
+        <main className="flex-1 ml-64 p-8 pt-24">
           {children}
         </main>
       </div>

@@ -66,7 +66,7 @@ const LoginPage: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center justify-center space-x-2 mb-8">
             <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">IV</span>
+              <span className="text-white font-bold">HI</span>
             </div>
             <span className="text-2xl font-bold text-gray-900">HonestInvoice</span>
           </div>

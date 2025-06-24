@@ -1,13 +1,20 @@
 {
-  "name": "worker-invoice",
+  "name": "worker-invoice-gen-00",
   "main": "src/index.ts",
   "compatibility_date": "2025-06-20",
-  "type": "javascript",
-  "account_id": "<corymurdoch49@gmail.com>",
-  "workers_dev": true,
-  "routes": [
-    "https://worker-invoice.<your-subdomain>.workers.dev/*"
-  ],
-  "env": {},
-  "bindings": []
+  "account_id": "7697b65be27b75ca4d28ef855c44c65d",
+  "workers_dev": true
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

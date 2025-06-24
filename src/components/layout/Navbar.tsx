@@ -30,7 +30,7 @@ const Navbar: React.FC = () => {
         <div className="flex items-center space-x-4">
           <Link to="/dashboard" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">IV</span>
+              <span className="text-white font-bold text-sm">HI</span>
             </div>
             <span className="text-xl font-bold text-gray-900">HonestInvoice</span>
           </Link>
@@ -99,14 +99,6 @@ const Navbar: React.FC = () => {
             )}
           </div>
 
-          {/* Demo Notifications Button */}
-          <button
-            className="hidden md:block text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
-            onClick={() => addNotification('Demo', 'This is a test notification')}
-          >
-            Add Demo
-          </button>
-
           {/* User Menu */}
           <div className="relative">
             <button
@@ -116,7 +108,7 @@ const Navbar: React.FC = () => {
               <UserCircleIcon className="w-8 h-8" />
               <div className="hidden md:block text-left">
                 <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.subscription.plan} Plan</p>
+                <p className="text-xs text-gray-500 capitalize">{user?.subscription?.plan ? `${user.subscription.plan} Plan` : 'No Plan'}</p>
               </div>
               <ChevronDownIcon className="w-4 h-4" />
             </button>

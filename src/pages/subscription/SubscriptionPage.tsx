@@ -88,9 +88,9 @@ const SubscriptionPage: React.FC = () => {
 
   const handlePlanChange = (planId: string) => {
     if (planId === 'pro') {
-      window.open('https://buy.stripe.com/6oUaEX3yffUb0QndZl7kc01', '_blank');
-    } else if (planId === 'basic') {
       window.open('https://buy.stripe.com/5kQ4gzb0HdM31Ur1cz7kc00', '_blank');
+    } else if (planId === 'business') {
+      window.open('https://buy.stripe.com/6oUaEX3yffUb0QndZl7kc01', '_blank');
     }
   };
 
@@ -112,7 +112,7 @@ const SubscriptionPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-16">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900">Subscription</h1>
@@ -207,11 +207,15 @@ const SubscriptionPage: React.FC = () => {
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Plans</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg border-2 border-gray-200 hover:border-green-300 p-6">
+          <div className="bg-white rounded-lg border-2 border-green-500 p-6 relative">
+            <span className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+              Most Popular
+            </span>
+
             <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Business Plan</h3>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">Pro Plan</h3>
               <div className="mb-4">
-                <span className="text-3xl font-bold text-gray-900">$19</span>
+                <span className="text-3xl font-bold text-gray-900">$9</span>
                 <span className="text-gray-600">/month</span>
               </div>
             </div>
@@ -219,7 +223,7 @@ const SubscriptionPage: React.FC = () => {
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
                 <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">50 invoices per month</span>
+                <span className="text-gray-700">50 Invoices Per Month</span>
               </li>
               <li className="flex items-start">
                 <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
@@ -232,18 +236,14 @@ const SubscriptionPage: React.FC = () => {
             </ul>
 
             <button
-              onClick={() => handlePlanChange('basic')}
+              onClick={() => handlePlanChange('pro')}
               className="w-full py-3 px-4 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
             >
-              Select Business Plan
+              Select Pro Plan
             </button>
           </div>
 
-          <div className="bg-white rounded-lg border-2 border-green-500 p-6 relative">
-            <span className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              Most Popular
-            </span>
-
+          <div className="bg-white rounded-lg border-2 border-gray-200 hover:border-green-300 p-6">
             <div className="mb-6">
               <h3 className="text-xl font-semibold text-gray-900 mb-2">Business Plan</h3>
               <div className="mb-4">
@@ -255,7 +255,7 @@ const SubscriptionPage: React.FC = () => {
             <ul className="space-y-3 mb-8">
               <li className="flex items-start">
                 <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">Unlimited invoices</span>
+                <span className="text-gray-700">Unlimited invoices per month</span>
               </li>
               <li className="flex items-start">
                 <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
@@ -268,7 +268,10 @@ const SubscriptionPage: React.FC = () => {
             </ul>
 
             <button
-              onClick={() => handlePlanChange('pro')}
+              onClick={(e) => {
+                e.preventDefault();
+                handlePlanChange('business');
+              }}
               className="w-full py-3 px-4 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
             >
               Select Business Plan

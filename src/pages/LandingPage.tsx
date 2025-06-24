@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import supabase from "../config/SupabaseClient.js";
 import {
   DocumentTextIcon,
   UserGroupIcon,
@@ -45,12 +46,12 @@ const LandingPage: React.FC = () => {
         'PDF downloads'
       ],
       buttonText: 'Get Started Free',
-      buttonClass: 'bg-gray-600 hover:bg-gray-700 text-white',
+      buttonClass: 'bg-green-600 hover:bg-green-700 text-white mt-2',
       popular: false
     },
     {
       name: 'Pro',
-      price: '$19',
+      price: '$9',
       description: 'Best for growing businesses',
       features: [
         'Unlimited invoices',
@@ -62,7 +63,8 @@ const LandingPage: React.FC = () => {
       ],
       buttonText: 'Start Pro Trial',
       buttonClass: 'bg-green-600 hover:bg-green-700 text-white',
-      popular: true
+      popular: true,
+      paymentLink: import.meta.env.VITE_STRIPE_PRO_LINK
     },
     {
       name: 'Business',
@@ -77,7 +79,7 @@ const LandingPage: React.FC = () => {
         'Dedicated support'
       ],
       buttonText: 'Upgrade Now!',
-      buttonClass: 'bg-blue-600 hover:bg-blue-700 text-white',
+      buttonClass: 'bg-green-600 hover:bg-green-700 text-white',
       popular: false
     }
   ];
@@ -281,7 +283,7 @@ const LandingPage: React.FC = () => {
                 </div>
                 <p className="text-gray-600 mb-6">{plan.description}</p>
                 
-                <ul className="space-y-3 mb-8">
+                <ul className={`space-y-3 ${plan.name === 'Free' ? 'mb-6' : 'mb-8'}`}>
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start">
                       <CheckIcon className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
@@ -290,9 +292,12 @@ const LandingPage: React.FC = () => {
                   ))}
                 </ul>
 
-                <button className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${plan.buttonClass}`}>
+                <a
+                  href={plan.paymentLink || '#'}
+                  className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${plan.name === 'Free' ? 'mt-10 ' : ''}${plan.buttonClass} block text-center`}
+                >
                   {plan.buttonText}
-                </button>
+                </a>
               </div>
             ))}
           </div>

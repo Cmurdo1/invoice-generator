@@ -1,35 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface User {
   id: string;
   email: string;
-  name: string;
-  company: string;
-  role: string;
-  subscription: {
-    plan: string;
-    status: string;
-    current_period_start: string;
-    current_period_end: string;
-  };
-  profile: {
-    phone: string;
-    address: string;
-    city: string;
-    state: string;
-    zip: string;
-    country: string;
-    logo: string | null;
-    invoice_settings: {
-      default_currency: string;
-      tax_rate: number;
-      invoice_prefix: string;
-      next_invoice_number: number;
-    };
-  };
-  created_at: string;
-  updated_at: string;
+  // ...other fields as needed
 }
 
 interface AuthContextType {
@@ -51,68 +31,66 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user data for static build
-const MOCK_USER: User = {
-  id: 'user-123',
-  email: 'demo@example.com',
-  name: 'Demo User',
-  company: 'Demo Company',
-  role: 'admin',
-  subscription: {
-    plan: 'premium',
-    status: 'active',
-    current_period_start: '2025-01-01',
-    current_period_end: '2025-12-31'
-  },
-  profile: {
-    phone: '+1234567890',
-    address: '123 Main St',
-    city: 'San Francisco',
-    state: 'CA',
-    zip: '94105',
-    country: 'USA',
-    logo: null,
-    invoice_settings: {
-      default_currency: 'USD',
-      tax_rate: 8.5,
-      invoice_prefix: 'INV',
-      next_invoice_number: 1001
-    }
-  },
-  created_at: '2025-01-01T00:00:00Z',
-  updated_at: '2025-01-01T00:00:00Z'
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(MOCK_USER);
-  const [token, setToken] = useState<string | null>('mock-token-123');
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // Optionally, load user/token from localStorage here
+  }, []);
+
   const login = async (email: string, password: string): Promise<boolean> => {
-    setUser(MOCK_USER);
-    setToken('mock-token-123');
-    toast.success('Login successful! (Demo Mode)');
-    return true;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      setUser(data.user as User);
+      setToken(data.session?.access_token || null);
+      toast.success('Login successful!');
+      return true;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      toast.error(error.message || 'Login failed. Please try again');
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const register = async (userData: RegisterData): Promise<boolean> => {
-    setUser(MOCK_USER);
-    setToken('mock-token-123');
-    toast.success('Registration successful! (Demo Mode)');
-    return true;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: { name: userData.name, company: userData.company }
+        }
+      });
+      if (error) throw error;
+      setUser(data.user as User);
+      setToken(data.session?.access_token || null);
+      toast.success('Registration successful! Please check your email to confirm.');
+      return true;
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      toast.error(error.message || 'Registration failed. Please try again');
+      return false;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(MOCK_USER); // Keep user logged in for demo
-    toast.success('Logged out successfully (Demo Mode)');
+  const logout = async () => {
+    setUser(null);
+    setToken(null);
+    await supabase.auth.signOut();
+    toast.success('Logged out successfully');
   };
 
   const updateProfile = async (data: Partial<User>): Promise<boolean> => {
-    if (user) {
-      setUser({ ...user, ...data });
-      toast.success('Profile updated successfully (Demo Mode)');
-      return true;
-    }
+    toast.error('Profile update not implemented');
     return false;
   };
 
@@ -130,11 +108,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 };
 
 export const useAuth = () => {
+  // Always call the hook at the top level of your component, not inside a function/condition
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
 };
-
-export default AuthContext;

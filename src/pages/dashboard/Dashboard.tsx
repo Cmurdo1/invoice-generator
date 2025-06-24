@@ -193,7 +193,7 @@ const Dashboard: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pt-20">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -415,7 +415,7 @@ const Dashboard: React.FC = () => {
             </div>
           </Link>
           <a
-            href="https://buy.stripe.com/6oUaEX3yffUb0QndZl7kc01"
+            href="https://buy.stripe.com/5kQ4gzb0HdM31Ur1cz7kc00"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center p-4 border border-gray-200 rounded-lg hover:border-yellow-300 hover:bg-yellow-50 transition-colors"
