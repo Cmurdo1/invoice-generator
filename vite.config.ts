@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
     }, {} as Record<string, string>);
 
   return {
+    base: '/invoice-generator/',
     plugins: [react()],
     resolve: {
       alias: {

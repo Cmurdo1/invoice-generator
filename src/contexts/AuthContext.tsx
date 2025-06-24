@@ -50,7 +50,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.success('Login successful!');
       return true;
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('Login error:', error, {
+        email,
+        supabaseUrl,
+        supabaseAnonKey,
+        env: import.meta.env
+      });
       toast.error(error.message || 'Login failed. Please try again');
       return false;
     } finally {
