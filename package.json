@@ -10,9 +10,12 @@
     "preview": "vite preview",
     "deploy:dev": "wrangler deploy",
     "deploy:invoice": "wrangler deploy -c worker-invoice.wrangler.json",
+    "deploy:pages": "wrangler pages deploy dist --project-name invoice-generator",
     "start": "node server.js",
     "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -d dist",
+    "ci": "npm ci && npm run build",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

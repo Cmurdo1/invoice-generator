@@ -1,0 +1,42 @@
+name: Deploy Preview
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    name: Deploy Preview to Cloudflare Pages
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+        env:
+          VITE_TEST_MODE: true
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_STRIPE_PRO_LINK: ${{ secrets.VITE_STRIPE_PRO_LINK }}
+          VITE_STRIPE_BUSINESS_LINK: ${{ secrets.VITE_STRIPE_BUSINESS_LINK }}
+
+      - name: Deploy Preview to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: invoice-generator
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          wranglerVersion: '3'
