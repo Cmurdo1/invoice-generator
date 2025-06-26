@@ -162,11 +162,12 @@ const LoginPage: React.FC = () => {
 
           {/* Demo account info */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Demo Account</h4>
-            <p className="text-sm text-blue-700 mb-2">Try the app with demo credentials:</p>
+            <h4 className="text-sm font-medium text-blue-900 mb-2">Test Mode Available</h4>
+            <p className="text-sm text-blue-700 mb-2">If you see authentication errors (405), the app has test mode:</p>
             <div className="text-sm text-blue-600 space-y-1">
-              <p><strong>Email:</strong> demo@HonestInvoice.com</p>
-              <p><strong>Password:</strong> demo123</p>
+              <p><strong>Test Mode:</strong> Any email/password works</p>
+              <p><strong>Example:</strong> test@example.com / password123</p>
+              <p className="text-xs text-blue-500 mt-2">Test mode bypasses Supabase authentication issues</p>
             </div>
           </div>
 

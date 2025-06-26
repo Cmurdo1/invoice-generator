@@ -107,7 +107,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error: any) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Login failed. Please check your credentials.');
+
+      // If it's a 405 hook error, suggest test mode
+      if (error.message && error.message.includes('405')) {
+        toast.error('Supabase authentication error. Enable test mode in .env file (VITE_TEST_MODE=true)');
+      } else {
+        toast.error(error.message || 'Login failed. Please check your credentials.');
+      }
       return false;
     } finally {
       setLoading(false);
