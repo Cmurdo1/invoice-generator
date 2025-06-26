@@ -12,6 +12,9 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { getDashboardData } from '@/services/supabaseService';
+import { getTestDashboardData } from '@/services/testDataService';
+import toast from 'react-hot-toast';
 
 interface DashboardData {
   summary: {
@@ -46,59 +49,54 @@ interface DashboardData {
 }
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
-  const [dashboardData] = useState<DashboardData>({
-    summary: {
-      total_invoices: 42,
-      total_clients: 15,
-      total_revenue: 12500,
-      pending_amount: 3200,
-      overdue_amount: 1500,
-      overdue_count: 3
-    },
-    status_breakdown: {
-      draft: 5,
-      sent: 12,
-      paid: 20,
-      overdue: 5
-    },
-    this_month: {
-      invoices: 8,
-      revenue: 2800,
-      revenue_change: 12.5,
-      invoice_change: 14.3
-    },
-    recent_invoices: [
-      {
-        id: 'inv-1001',
-        invoice_number: 'INV-1001',
-        client_name: 'Acme Corp',
-        total: 1200,
-        status: 'paid',
-        created_at: '2025-06-15',
-        due_date: '2025-06-30'
-      },
-      {
-        id: 'inv-1002',
-        invoice_number: 'INV-1002',
-        client_name: 'Globex Inc',
-        total: 850,
-        status: 'sent',
-        created_at: '2025-06-18',
-        due_date: '2025-07-05'
-      },
-      {
-        id: 'inv-1003',
-        invoice_number: 'INV-1003',
-        client_name: 'Initech LLC',
-        total: 1500,
-        status: 'overdue',
-        created_at: '2025-05-20',
-        due_date: '2025-06-10'
+  const { user, token } = useAuth();
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        // Use test data if in test mode or if Supabase fails
+        const isTestMode = import.meta.env.VITE_TEST_MODE === 'true';
+        const data = isTestMode ? await getTestDashboardData() : await getDashboardData();
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+        toast.error('Failed to load dashboard data');
+        // Set empty data as fallback
+        setDashboardData({
+          summary: {
+            total_invoices: 0,
+            total_clients: 0,
+            total_revenue: 0,
+            pending_amount: 0,
+            overdue_amount: 0,
+            overdue_count: 0
+          },
+          status_breakdown: {
+            draft: 0,
+            sent: 0,
+            paid: 0,
+            overdue: 0
+          },
+          this_month: {
+            invoices: 0,
+            revenue: 0,
+            revenue_change: 0,
+            invoice_change: 0
+          },
+          recent_invoices: []
+        });
+      } finally {
+        setLoading(false);
       }
-    ]
-  });
-  const loading = false;
+    };
+
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

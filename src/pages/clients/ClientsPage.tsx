@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
+import { getClients } from '@/services/supabaseService';
 
 interface Client {
   id: string;
@@ -44,23 +45,34 @@ const ClientsPage: React.FC = () => {
 
   const fetchClients = async () => {
     try {
-      const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: '10',
-        ...(searchTerm && { search: searchTerm })
-      });
+      setLoading(true);
+      const allClients = await getClients();
 
-      const response = await fetch(`http://localhost:3001/api/clients?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setClients(data.clients);
-        setTotalPages(data.pagination.pages);
+      // Filter clients based on search term
+      let filteredClients = allClients;
+      if (searchTerm) {
+        filteredClients = allClients.filter(client =>
+          client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          client.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          client.company?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
       }
+
+      // Simple pagination
+      const limit = 10;
+      const totalPages = Math.ceil(filteredClients.length / limit);
+      const startIndex = (currentPage - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedClients = filteredClients.slice(startIndex, endIndex);
+
+      setClients(paginatedClients.map(client => ({
+        ...client,
+        company: client.company || '',
+        invoice_count: 0, // TODO: Calculate from invoices
+        total_billed: 0,  // TODO: Calculate from invoices
+        total_paid: 0     // TODO: Calculate from invoices
+      })));
+      setTotalPages(totalPages);
     } catch (error) {
       console.error('Failed to fetch clients:', error);
       toast.error('Failed to load clients');
@@ -75,20 +87,16 @@ const ClientsPage: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:3001/api/clients/${clientId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { error } = await supabase
+        .from('clients')
+        .delete()
+        .eq('id', clientId);
 
-      if (response.ok) {
-        toast.success('Client deleted successfully');
-        fetchClients();
-      } else {
-        const data = await response.json();
-        toast.error(data.error || 'Failed to delete client');
-      }
+      if (error) throw error;
+
+      toast.success('Client deleted successfully');
+      fetchClients();
     } catch (error) {
       console.error('Failed to delete client:', error);
       toast.error('Failed to delete client');

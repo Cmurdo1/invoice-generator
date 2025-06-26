@@ -80,7 +80,8 @@ const LandingPage: React.FC = () => {
       ],
       buttonText: 'Upgrade Now!',
       buttonClass: 'bg-green-600 hover:bg-green-700 text-white',
-      popular: false
+      popular: false,
+      paymentLink: import.meta.env.VITE_STRIPE_BUSINESS_LINK
     }
   ];
 

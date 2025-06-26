@@ -1,9 +1,0 @@
-    {
-        "name": "invoice-gen-00",
-        "account_id": "7697b65be27b75ca4d28ef855c44c65d",
-        "compatibility_date": "2025-06-20",
-        "workers_dev": true,
-        "assets": {
-          "directory": "./dist"
-        }
-    }

@@ -88,9 +88,19 @@ const SubscriptionPage: React.FC = () => {
 
   const handlePlanChange = (planId: string) => {
     if (planId === 'pro') {
-      window.open('https://buy.stripe.com/5kQ4gzb0HdM31Ur1cz7kc00', '_blank');
+      const proLink = import.meta.env.VITE_STRIPE_PRO_LINK;
+      if (proLink) {
+        window.open(proLink, '_blank');
+      } else {
+        console.warn('Pro payment link not configured');
+      }
     } else if (planId === 'business') {
-      window.open('https://buy.stripe.com/6oUaEX3yffUb0QndZl7kc01', '_blank');
+      const businessLink = import.meta.env.VITE_STRIPE_BUSINESS_LINK;
+      if (businessLink) {
+        window.open(businessLink, '_blank');
+      } else {
+        console.warn('Business payment link not configured');
+      }
     }
   };
 

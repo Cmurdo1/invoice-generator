@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { TestAuthProvider } from './contexts/TestAuthContext';
 
 const queryClient = new QueryClient();
 
@@ -199,8 +200,23 @@ const AppRoutes: React.FC = () => {
 };
 
 const App: React.FC = () => {
+  // Use test mode if explicitly enabled OR if Supabase credentials are missing/invalid
+  const isTestMode = import.meta.env.VITE_TEST_MODE === 'true' ||
+                     !import.meta.env.VITE_SUPABASE_URL ||
+                     import.meta.env.VITE_SUPABASE_URL.includes('placeholder');
+
+  const AuthProviderComponent = isTestMode ? TestAuthProvider : AuthProvider;
+
+  // Log the mode for debugging
+  console.log('App Mode:', isTestMode ? 'TEST MODE' : 'SUPABASE MODE');
+
   return (
-    <AuthProvider>
+    <AuthProviderComponent>
+      {isTestMode && (
+        <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-black text-center py-1 text-sm font-medium z-50">
+          🧪 TEST MODE - Authentication bypassed for testing
+        </div>
+      )}
       <AppRoutes />
       <Toaster
         position="top-right"
@@ -233,7 +249,7 @@ const App: React.FC = () => {
           },
         }}
       />
-    </AuthProvider>
+    </AuthProviderComponent>
   );
 };
 

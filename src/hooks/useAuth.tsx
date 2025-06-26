@@ -1,6 +1,32 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+
+interface User extends SupabaseUser {
+  name?: string;
+  company?: string;
+  subscription?: {
+    plan: string;
+    status: string;
+    current_period_start: string;
+    current_period_end: string;
+  };
+  profile?: {
+    phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip?: string;
+    country?: string;
+    logo?: string | null;
+    invoice_settings?: {
+      default_currency: string;
+      tax_rate: number;
+      invoice_prefix: string;
+      next_invoice_number: number;
+    };
+  };
+}
 
 interface AuthContextType {
   user: User | null;
