@@ -1,3 +1,19 @@
+// MUST BE FIRST: Suppress SES warnings before any other imports
+(function() {
+  const originalWarn = console.warn;
+  console.warn = function(...args: any[]) {
+    const message = String(args[0] || '');
+    if (message.includes('dateTaming') ||
+        message.includes('mathTaming') ||
+        message.includes('SES') ||
+        message.includes('deprecated and does nothing') ||
+        message.includes('lockdown-install')) {
+      return; // Suppress SES warnings
+    }
+    originalWarn.apply(console, args);
+  };
+})();
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from './components/ErrorBoundary.tsx'
@@ -6,23 +22,26 @@ import { NotificationsProvider } from './contexts/NotificationsContext'
 import './index.css'
 import App from './App.tsx'
 
-// Suppress SES warnings from Cloudflare Workers runtime
+// Additional SES warning suppression
 const originalWarn = console.warn;
 const originalLog = console.log;
 const originalError = console.error;
 
-console.warn = (...args) => {
+console.warn = (...args: any[]) => {
   const message = String(args[0] || '');
   if (message.includes('dateTaming') ||
+      message.includes('mathTaming') ||
       message.includes('nullish') ||
       message.includes('SES') ||
-      message.includes('lockdown-install')) {
+      message.includes('lockdown-install') ||
+      message.includes('deprecated and does nothing') ||
+      message.includes('lockdown-install.js')) {
     return; // Suppress these specific warnings
   }
   originalWarn.apply(console, args);
 };
 
-console.log = (...args) => {
+console.log = (...args: any[]) => {
   const message = String(args[0] || '');
   if (message.includes('SES') ||
       message.includes('lockdown-install') ||
@@ -32,7 +51,7 @@ console.log = (...args) => {
   originalLog.apply(console, args);
 };
 
-console.error = (...args) => {
+console.error = (...args: any[]) => {
   const message = String(args[0] || '');
   if (message.includes('SES') ||
       message.includes('lockdown-install')) {
