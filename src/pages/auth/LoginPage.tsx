@@ -160,14 +160,14 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Demo account info */}
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">Test Mode Available</h4>
-            <p className="text-sm text-blue-700 mb-2">If you see authentication errors (405), the app has test mode:</p>
-            <div className="text-sm text-blue-600 space-y-1">
-              <p><strong>Test Mode:</strong> Any email/password works</p>
-              <p><strong>Example:</strong> test@example.com / password123</p>
-              <p className="text-xs text-blue-500 mt-2">Test mode bypasses Supabase authentication issues</p>
+          {/* Firebase Authentication Info */}
+          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <h4 className="text-sm font-medium text-green-900 mb-2">🔥 Firebase Authentication</h4>
+            <p className="text-sm text-green-700 mb-2">Secure authentication powered by Firebase</p>
+            <div className="text-sm text-green-600 space-y-1">
+              <p><strong>✅ Secure:</strong> Industry-standard authentication</p>
+              <p><strong>✅ Fast:</strong> Instant sign-in and sign-up</p>
+              <p className="text-xs text-green-500 mt-2">Create an account or sign in with your existing credentials</p>
             </div>
           </div>
 

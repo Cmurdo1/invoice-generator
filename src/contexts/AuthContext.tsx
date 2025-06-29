@@ -1,33 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { User as SupabaseUser } from '@supabase/supabase-js';
+import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
+import { auth } from '../Config/firebase';
+import {
+  signUpWithEmail,
+  signInWithEmail,
+  signOutUser,
+  convertFirebaseUser,
+  User,
+  RegisterData
+} from '@/services/authService';
 
-interface User extends SupabaseUser {
-  name?: string;
-  company?: string;
-  subscription?: {
-    plan: string;
-    status: string;
-    current_period_start: string;
-    current_period_end: string;
-  };
-  profile?: {
-    phone?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    zip?: string;
-    country?: string;
-    logo?: string | null;
-    invoice_settings?: {
-      default_currency: string;
-      tax_rate: number;
-      invoice_prefix: string;
-      next_invoice_number: number;
-    };
-  };
-}
+// User interface is now imported from authService
 
 interface AuthContextType {
   user: User | null;
@@ -39,12 +23,7 @@ interface AuthContextType {
   loading: boolean;
 }
 
-interface RegisterData {
-  name: string;
-  email: string;
-  password: string;
-  company?: string;
-}
+// RegisterData interface is now imported from authService
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -54,66 +33,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user as User);
-        setToken(session.access_token);
-      }
-      setLoading(false);
-    };
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // Convert Firebase user to our User interface
+        const userData = convertFirebaseUser(firebaseUser);
+        setUser(userData);
 
-    getInitialSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event);
-        if (session?.user) {
-          setUser(session.user as User);
-          setToken(session.access_token);
-        } else {
-          setUser(null);
+        // Get the ID token for API calls
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          setToken(idToken);
+        } catch (error) {
+          console.error('Error getting ID token:', error);
           setToken(null);
         }
-        setLoading(false);
+      } else {
+        setUser(null);
+        setToken(null);
       }
-    );
+      setLoading(false);
+    });
 
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { user: userData, error } = await signInWithEmail(email, password);
 
       if (error) {
-        console.error('Supabase auth error:', error);
-        throw error;
+        toast.error(error);
+        return false;
       }
 
-      if (data.user && data.session) {
-        setUser(data.user as User);
-        setToken(data.session.access_token);
+      if (userData) {
         toast.success('Login successful!');
         return true;
       } else {
-        throw new Error('No user data returned');
+        toast.error('Login failed. Please try again.');
+        return false;
       }
     } catch (error: any) {
-      console.error('Login error:', error);
-
-      // If it's a 405 hook error, suggest test mode
-      if (error.message && error.message.includes('405')) {
-        toast.error('Supabase authentication error. Enable test mode in .env file (VITE_TEST_MODE=true)');
-      } else {
-        toast.error(error.message || 'Login failed. Please check your credentials.');
-      }
+      toast.error('Login failed. Please check your credentials.');
       return false;
     } finally {
       setLoading(false);
@@ -123,21 +86,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (userData: RegisterData): Promise<boolean> => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email: userData.email,
-        password: userData.password,
-        options: {
-          data: { name: userData.name, company: userData.company }
-        }
-      });
-      if (error) throw error;
-      setUser(data.user as User);
-      setToken(data.session?.access_token || null);
-      toast.success('Registration successful! Please check your email to confirm.');
-      return true;
+      const { user: newUser, error } = await signUpWithEmail(userData);
+
+      if (error) {
+        toast.error(error);
+        return false;
+      }
+
+      if (newUser) {
+        toast.success('Registration successful!');
+        return true;
+      } else {
+        toast.error('Registration failed. Please try again.');
+        return false;
+      }
     } catch (error: any) {
       console.error('Registration error:', error);
-      toast.error(error.message || 'Registration failed. Please try again');
+      toast.error('Registration failed. Please try again.');
       return false;
     } finally {
       setLoading(false);
@@ -145,10 +110,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    setUser(null);
-    setToken(null);
-    await supabase.auth.signOut();
-    toast.success('Logged out successfully');
+    try {
+      const { error } = await signOutUser();
+      if (error) {
+        toast.error(error);
+      } else {
+        setUser(null);
+        setToken(null);
+        toast.success('Logged out successfully');
+      }
+    } catch (error: any) {
+      console.error('Logout error:', error);
+      toast.error('Logout failed');
+    }
   };
 
   const updateProfile = async (_data: Partial<User>): Promise<boolean> => {

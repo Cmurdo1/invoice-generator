@@ -34,9 +34,12 @@ CLOUDFLARE_ACCOUNT_ID = [Your Account ID from Step 2]
 
 ### Optional Environment Variables:
 ```
-VITE_TEST_MODE = true
-VITE_SUPABASE_URL = https://jdwawncmybyjthqovftk.supabase.co
-VITE_SUPABASE_ANON_KEY = [Your Supabase Anon Key]
+VITE_FIREBASE_API_KEY = [Your Firebase API Key]
+VITE_FIREBASE_AUTH_DOMAIN = [Your Firebase Auth Domain]
+VITE_FIREBASE_PROJECT_ID = [Your Firebase Project ID]
+VITE_FIREBASE_STORAGE_BUCKET = [Your Firebase Storage Bucket]
+VITE_FIREBASE_MESSAGING_SENDER_ID = [Your Firebase Messaging Sender ID]
+VITE_FIREBASE_APP_ID = [Your Firebase App ID]
 VITE_STRIPE_PRO_LINK = [Your Stripe Pro Payment Link]
 VITE_STRIPE_BUSINESS_LINK = [Your Stripe Business Payment Link]
 ```

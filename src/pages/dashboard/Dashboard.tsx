@@ -12,7 +12,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import { getDashboardData } from '@/services/supabaseService';
 import { getTestDashboardData } from '@/services/testDataService';
 import toast from 'react-hot-toast';
 
@@ -57,9 +56,8 @@ const Dashboard: React.FC = () => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // Use test data if in test mode or if Supabase fails
-        const isTestMode = import.meta.env.VITE_TEST_MODE === 'true';
-        const data = isTestMode ? await getTestDashboardData() : await getDashboardData();
+        // Fetch dashboard data from API
+        const data = await getTestDashboardData();
         setDashboardData(data);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);

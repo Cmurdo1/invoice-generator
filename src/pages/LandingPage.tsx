@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import supabase from "../config/SupabaseClient.js";
+// Firebase auth is handled in the auth context
 import {
   DocumentTextIcon,
   UserGroupIcon,
