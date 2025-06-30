@@ -1,0 +1,90 @@
+/* Base styles for the entire dashboard area */
+.dashboard-wrapper {
+  display: flex;
+  min-height: 100vh; /* Ensures content takes full height */
+  position: relative;
+  overflow-x: hidden; /* Prevent horizontal scrollbar during transition */
+}
+
+/* Sidebar styles */
+.sidebar {
+  position: fixed; /* Fixed position relative to the viewport */
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 250px; /* Adjust sidebar width as needed */
+  background-color: #2d3748; /* Dark background for the sidebar */
+  color: white;
+  transform: translateX(-100%); /* Initially hide the sidebar off-screen to the left */
+  transition: transform 0.3s ease-out; /* Smooth slide-out animation */
+  z-index: 1000; /* Ensure sidebar is above main content */
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+  padding-top: 4rem; /* Adjust padding to clear fixed toggle button */
+}
+
+/* Class to open the sidebar */
+.sidebar-open {
+  transform: translateX(0); /* Slide sidebar into view */
+}
+
+/* Main content area */
+.main-content {
+  flex-grow: 1; /* Allows main content to take up remaining space */
+  padding: 1.5rem; /* Existing padding from your dashboard component */
+  transition: margin-left 0.3s ease-out; /* Smooth transition for content shift */
+  margin-left: 0; /* Default margin */
+  width: 100%; /* Ensure it spans full width when sidebar is closed */
+}
+
+/* Adjust main content margin when sidebar is open (pushes content) */
+.main-content-shifted {
+  margin-left: 250px; /* Should match sidebar width */
+}
+
+/* Overlay for when sidebar is open */
+.sidebar-overlay {
+  /* Inherits fixed, inset-0, bg-black, bg-opacity-50, z-[999] from Tailwind classes in JSX */
+  /* No additional styles needed here unless you want to override existing Tailwind styles */
+}
+
+/* Toggle button specific styles (for the hamburger/close icon) */
+.sidebar-toggle-button {
+  /* Inherits fixed, top-4, left-4, z-[1001], p-2, rounded-md, text-gray-700, bg-white, shadow-md, hover:bg-gray-100, focus:outline-none, focus:ring-2, focus:ring-indigo-500 from Tailwind classes in JSX */
+}
+
+/* Responsive adjustments if needed */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 80%; /* Make sidebar wider on smaller screens */
+  }
+  .main-content-shifted {
+    margin-left: 0; /* On small screens, overlay the content, don't push */
+  }
+  .sidebar-overlay {
+    display: block; /* Ensure overlay is visible on small screens when sidebar is open */
+  }
+}
+
+/* Hide the toggle button by default if you want the sidebar to always be open on desktop */
+/* If you want it to always be a toggle, remove this media query */
+@media (min-width: 768px) {
+  /* For larger screens, remove the fixed positioning and make sidebar static */
+  .sidebar {
+    position: static;
+    transform: translateX(0); /* Always visible */
+    padding-top: 0; /* No need to clear button space */
+    box-shadow: none; /* No shadow needed if it's part of the main layout */
+  }
+
+  .sidebar-toggle-button {
+    display: none; /* Hide the toggle button on larger screens */
+  }
+
+  .main-content {
+    margin-left: 250px; /* Always shift content for the static sidebar */
+  }
+
+  .sidebar-overlay {
+    display: none; /* No overlay needed if sidebar is always visible */
+  }
+}
