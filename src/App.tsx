@@ -28,8 +28,6 @@ import SubscriptionPage from './pages/subscription/SubscriptionPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import ProfilePage from './pages/settings/ProfilePage';
 
-
-
 import './index.css';
 
 // Protected Route wrapper
@@ -200,42 +198,44 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <AuthProvider>
-        <AppContent />
-        <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#ffffff',
-            color: '#1f2937',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-          },
-          success: {
-            style: {
-              border: '1px solid #22c55e',
-            },
-            iconTheme: {
-              primary: '#22c55e',
-              secondary: '#ffffff',
-            },
-          },
-          error: {
-            style: {
-              border: '1px solid #ef4444',
-            },
-            iconTheme: {
-              primary: '#ef4444',
-              secondary: '#ffffff',
-            },
-          },
-        }}
-      />
-      </AuthProvider>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <AppContent />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#ffffff',
+                color: '#1f2937',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+              },
+              success: {
+                style: {
+                  border: '1px solid #22c55e',
+                },
+                iconTheme: {
+                  primary: '#22c55e',
+                  secondary: '#ffffff',
+                },
+              },
+              error: {
+                style: {
+                  border: '1px solid #ef4444',
+                },
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#ffffff',
+                },
+              },
+            }}
+          />
+        </AuthProvider>
+      </Router>
+    </QueryClientProvider>
   );
 };
 

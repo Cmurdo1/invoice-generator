@@ -1,150 +1,136 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
-import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { auth } from '../Config/firebase';
-import {
-  signUpWithEmail,
-  signInWithEmail,
-  signOutUser,
-  convertFirebaseUser,
-  User,
-  RegisterData
-} from '@/services/authService';
-
-// User interface is now imported from authService
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (userData: RegisterData) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (data: Partial<User>) => Promise<boolean>;
+  session: Session | null;
   loading: boolean;
+  signUp: (email: string, password: string, name?: string, company?: string) => Promise<{ error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ error?: string }>;
+  signOut: () => Promise<void>;
+  updateProfile: (data: any) => Promise<{ error?: string }>;
 }
-
-// RegisterData interface is now imported from authService
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Listen for auth state changes
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      if (firebaseUser) {
-        // Convert Firebase user to our User interface
-        const userData = convertFirebaseUser(firebaseUser);
-        setUser(userData);
-
-        // Get the ID token for API calls
-        try {
-          const idToken = await firebaseUser.getIdToken();
-          setToken(idToken);
-        } catch (error) {
-          console.error('Error getting ID token:', error);
-          setToken(null);
-        }
-      } else {
-        setUser(null);
-        setToken(null);
-      }
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    setLoading(true);
+  const signUp = async (email: string, password: string, name?: string, company?: string) => {
     try {
-      const { user: userData, error } = await signInWithEmail(email, password);
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name: name || '',
+            company: company || '',
+          },
+        },
+      });
 
       if (error) {
-        toast.error(error);
-        return false;
+        return { error: error.message };
       }
 
-      if (userData) {
-        toast.success('Login successful!');
-        return true;
-      } else {
-        toast.error('Login failed. Please try again.');
-        return false;
-      }
+      toast.success('Account created successfully! Please check your email to verify your account.');
+      return {};
     } catch (error: any) {
-      toast.error('Login failed. Please check your credentials.');
-      return false;
-    } finally {
-      setLoading(false);
+      return { error: error.message };
     }
   };
 
-  const register = async (userData: RegisterData): Promise<boolean> => {
-    setLoading(true);
+  const signIn = async (email: string, password: string) => {
     try {
-      const { user: newUser, error } = await signUpWithEmail(userData);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (error) {
-        toast.error(error);
-        return false;
+        return { error: error.message };
       }
 
-      if (newUser) {
-        toast.success('Registration successful!');
-        return true;
-      } else {
-        toast.error('Registration failed. Please try again.');
-        return false;
-      }
+      toast.success('Signed in successfully!');
+      return {};
     } catch (error: any) {
-      console.error('Registration error:', error);
-      toast.error('Registration failed. Please try again.');
-      return false;
-    } finally {
-      setLoading(false);
+      return { error: error.message };
     }
   };
 
-  const logout = async () => {
+  const signOut = async () => {
     try {
-      const { error } = await signOutUser();
+      const { error } = await supabase.auth.signOut();
       if (error) {
-        toast.error(error);
+        toast.error(error.message);
       } else {
-        setUser(null);
-        setToken(null);
-        toast.success('Logged out successfully');
+        toast.success('Signed out successfully');
       }
     } catch (error: any) {
-      console.error('Logout error:', error);
-      toast.error('Logout failed');
+      toast.error('Error signing out');
     }
   };
 
-  const updateProfile = async (_data: Partial<User>): Promise<boolean> => {
-    toast.error('Profile update not implemented');
-    return false;
+  const updateProfile = async (data: any) => {
+    try {
+      if (!user) {
+        return { error: 'No user logged in' };
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', user.id);
+
+      if (error) {
+        return { error: error.message };
+      }
+
+      toast.success('Profile updated successfully');
+      return {};
+    } catch (error: any) {
+      return { error: error.message };
+    }
   };
 
   const value = {
     user,
-    token,
-    login,
-    register,
-    logout,
-    updateProfile,
+    session,
     loading,
+    signUp,
+    signIn,
+    signOut,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
-  // Always call the hook at the top level of your component, not inside a function/condition
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
