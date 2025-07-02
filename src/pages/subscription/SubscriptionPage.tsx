@@ -1,110 +1,55 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   CheckIcon,
   CreditCardIcon,
   CalendarDaysIcon,
-  ArrowUpIcon
+  ArrowUpIcon,
+  SparklesIcon,
+  CogIcon
 } from '@heroicons/react/24/outline';
-import { useAuth } from '../../contexts/AuthContext';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { useAuth } from '@/contexts/AuthContext';
+import { useStripeCustomer, useCreateCheckoutSession, useCreatePortalSession, useSubscriptionUsage } from '@/hooks/useStripe';
+import { SUBSCRIPTION_PLANS } from '@/lib/stripe';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 
-interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  interval: string;
-  features: string[];
-  limits: {
-    monthly_invoices: number;
-    clients: number;
-    templates: number;
-  };
-}
-
-interface SubscriptionData {
-  subscription: {
-    plan: string;
-    status: string;
-    current_period_start: string;
-    current_period_end: string;
-    plan_details: Plan;
-  };
-  usage: {
-    invoices_this_month: number;
-    total_invoices: number;
-    total_clients: number;
-  };
-  limits: {
-    monthly_invoices: number;
-    clients: number;
-    templates: number;
-  };
-}
-
 const SubscriptionPage: React.FC = () => {
-  const { user, token } = useAuth();
-  const [subscriptionData, setSubscriptionData] = useState<SubscriptionData | null>(null);
-  const [availablePlans, setAvailablePlans] = useState<Plan[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [changingPlan, setChangingPlan] = useState(false);
+  const { user } = useAuth();
+  const { data: customer, isLoading: customerLoading } = useStripeCustomer();
+  const { data: usage, isLoading: usageLoading } = useSubscriptionUsage();
+  const createCheckoutSession = useCreateCheckoutSession();
+  const createPortalSession = useCreatePortalSession();
 
-  useEffect(() => {
-    fetchSubscriptionData();
-    fetchAvailablePlans();
-  }, []);
+  const currentPlan = customer?.subscription_plan || 'free';
+  const isActive = customer?.subscription_status === 'active';
 
-  const fetchSubscriptionData = async () => {
+  const handleUpgrade = async (planId: string) => {
+    const plan = SUBSCRIPTION_PLANS[planId as keyof typeof SUBSCRIPTION_PLANS];
+    if (!plan.priceId) {
+      toast.error('Price ID not configured for this plan');
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:3001/api/subscriptions/current', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      await createCheckoutSession.mutateAsync({
+        priceId: plan.priceId,
+        planId: planId,
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setSubscriptionData(data);
-      }
     } catch (error) {
-      console.error('Failed to fetch subscription data:', error);
+      console.error('Upgrade error:', error);
     }
   };
 
-  const fetchAvailablePlans = async () => {
+  const handleManageBilling = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/subscriptions/plans');
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAvailablePlans(data.plans);
-      }
+      await createPortalSession.mutateAsync();
     } catch (error) {
-      console.error('Failed to fetch plans:', error);
-    } finally {
-      setLoading(false);
+      console.error('Portal error:', error);
     }
   };
 
-  const handlePlanChange = (planId: string) => {
-    if (planId === 'pro') {
-      const proLink = import.meta.env.VITE_STRIPE_PRO_LINK;
-      if (proLink) {
-        window.open(proLink, '_blank');
-      } else {
-        console.warn('Pro payment link not configured');
-      }
-    } else if (planId === 'business') {
-      const businessLink = import.meta.env.VITE_STRIPE_BUSINESS_LINK;
-      if (businessLink) {
-        window.open(businessLink, '_blank');
-      } else {
-        console.warn('Business payment link not configured');
-      }
-    }
-  };
-
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -117,7 +62,7 @@ const SubscriptionPage: React.FC = () => {
     return Math.min((used / limit) * 100, 100);
   };
 
-  if (loading) {
+  if (customerLoading || usageLoading) {
     return <LoadingSpinner text="Loading subscription details..." />;
   }
 
@@ -129,35 +74,49 @@ const SubscriptionPage: React.FC = () => {
         <p className="text-gray-600 mt-1">Manage your billing and subscription plan</p>
       </div>
 
-      {/* Current Plan */}
-      {subscriptionData && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Current Plan</h2>
+      {/* Current Plan Status */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-gray-900">Current Plan</h2>
+          <div className="flex items-center space-x-3">
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              subscriptionData.subscription.status === 'active' 
+              isActive 
                 ? 'bg-green-100 text-green-800'
                 : 'bg-yellow-100 text-yellow-800'
             }`}>
-              {subscriptionData.subscription.status.charAt(0).toUpperCase() + subscriptionData.subscription.status.slice(1)}
+              {isActive ? 'Active' : 'Inactive'}
             </span>
+            {customer && (
+              <button
+                onClick={handleManageBilling}
+                disabled={createPortalSession.isPending}
+                className="flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <CogIcon className="w-4 h-4 mr-1" />
+                Manage Billing
+              </button>
+            )}
           </div>
+        </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {subscriptionData.subscription.plan_details.name} Plan
-              </h3>
-              <p className="text-3xl font-bold text-gray-900 mb-2">
-                ${subscriptionData.subscription.plan_details.price}
-                <span className="text-base font-normal text-gray-600">/month</span>
-              </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {SUBSCRIPTION_PLANS[currentPlan].name} Plan
+            </h3>
+            <p className="text-3xl font-bold text-gray-900 mb-2">
+              ${SUBSCRIPTION_PLANS[currentPlan].price}
+              <span className="text-base font-normal text-gray-600">/month</span>
+            </p>
+            {customer?.current_period_end && (
               <div className="flex items-center text-sm text-gray-600 mb-4">
                 <CalendarDaysIcon className="w-4 h-4 mr-2" />
-                Next billing: {formatDate(subscriptionData.subscription.current_period_end)}
+                Next billing: {formatDate(customer.current_period_end)}
               </div>
-            </div>
+            )}
+          </div>
 
+          {usage && (
             <div>
               <h4 className="text-sm font-medium text-gray-900 mb-3">Usage This Month</h4>
               <div className="space-y-3">
@@ -165,20 +124,26 @@ const SubscriptionPage: React.FC = () => {
                   <div className="flex justify-between text-sm mb-1">
                     <span>Invoices</span>
                     <span>
-                      {subscriptionData.usage.invoices_this_month} / {
-                        subscriptionData.limits.monthly_invoices === -1 
+                      {usage.invoicesThisMonth} / {
+                        SUBSCRIPTION_PLANS[currentPlan].limits.invoices === -1 
                           ? 'Unlimited' 
-                          : subscriptionData.limits.monthly_invoices
+                          : SUBSCRIPTION_PLANS[currentPlan].limits.invoices
                       }
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-green-600 h-2 rounded-full" 
+                      className={`h-2 rounded-full ${
+                        getUsagePercentage(usage.invoicesThisMonth, SUBSCRIPTION_PLANS[currentPlan].limits.invoices) > 80
+                          ? 'bg-red-500'
+                          : getUsagePercentage(usage.invoicesThisMonth, SUBSCRIPTION_PLANS[currentPlan].limits.invoices) > 60
+                          ? 'bg-yellow-500'
+                          : 'bg-green-500'
+                      }`}
                       style={{ 
                         width: `${getUsagePercentage(
-                          subscriptionData.usage.invoices_this_month, 
-                          subscriptionData.limits.monthly_invoices
+                          usage.invoicesThisMonth, 
+                          SUBSCRIPTION_PLANS[currentPlan].limits.invoices
                         )}%` 
                       }}
                     ></div>
@@ -188,20 +153,20 @@ const SubscriptionPage: React.FC = () => {
                   <div className="flex justify-between text-sm mb-1">
                     <span>Clients</span>
                     <span>
-                      {subscriptionData.usage.total_clients} / {
-                        subscriptionData.limits.clients === -1 
+                      {usage.totalClients} / {
+                        SUBSCRIPTION_PLANS[currentPlan].limits.clients === -1 
                           ? 'Unlimited' 
-                          : subscriptionData.limits.clients
+                          : SUBSCRIPTION_PLANS[currentPlan].limits.clients
                       }
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-blue-600 h-2 rounded-full" 
+                      className="bg-blue-500 h-2 rounded-full" 
                       style={{ 
                         width: `${getUsagePercentage(
-                          subscriptionData.usage.total_clients, 
-                          subscriptionData.limits.clients
+                          usage.totalClients, 
+                          SUBSCRIPTION_PLANS[currentPlan].limits.clients
                         )}%` 
                       }}
                     ></div>
@@ -209,118 +174,132 @@ const SubscriptionPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
-      )}
+      </div>
 
       {/* Available Plans */}
       <div>
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Available Plans</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg border-2 border-green-500 p-6 relative">
-            <span className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-              Most Popular
-            </span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Object.entries(SUBSCRIPTION_PLANS).map(([planId, plan]) => {
+            const isCurrentPlan = currentPlan === planId;
+            const isPopular = planId === 'pro';
+            
+            return (
+              <div
+                key={planId}
+                className={`relative bg-white rounded-lg border-2 p-6 ${
+                  isCurrentPlan
+                    ? 'border-green-500 ring-2 ring-green-200'
+                    : isPopular
+                    ? 'border-blue-500'
+                    : 'border-gray-200 hover:border-gray-300'
+                } transition-all`}
+              >
+                {isPopular && (
+                  <span className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                    <SparklesIcon className="w-4 h-4 mr-1" />
+                    Most Popular
+                  </span>
+                )}
 
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Pro Plan</h3>
-              <div className="mb-4">
-                <span className="text-3xl font-bold text-gray-900">$9</span>
-                <span className="text-gray-600">/month</span>
+                {isCurrentPlan && (
+                  <span className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                    Current
+                  </span>
+                )}
+
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">{plan.name}</h3>
+                  <div className="mb-4">
+                    <span className="text-3xl font-bold text-gray-900">${plan.price}</span>
+                    <span className="text-gray-600">/month</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-start">
+                      <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-700">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() => handleUpgrade(planId)}
+                  disabled={isCurrentPlan || createCheckoutSession.isPending || planId === 'free'}
+                  className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                    isCurrentPlan
+                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : planId === 'free'
+                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
+                >
+                  {isCurrentPlan
+                    ? 'Current Plan'
+                    : planId === 'free'
+                    ? 'Free Plan'
+                    : createCheckoutSession.isPending
+                    ? 'Loading...'
+                    : `Upgrade to ${plan.name}`}
+                </button>
               </div>
-            </div>
-
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-start">
-                <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">50 Invoices Per Month</span>
-              </li>
-              <li className="flex items-start">
-                <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">Basic templates</span>
-              </li>
-              <li className="flex items-start">
-                <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">Email support</span>
-              </li>
-            </ul>
-
-            <button
-              onClick={() => handlePlanChange('pro')}
-              className="w-full py-3 px-4 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
-            >
-              Select Pro Plan
-            </button>
-          </div>
-
-          <div className="bg-white rounded-lg border-2 border-gray-200 hover:border-green-300 p-6">
-            <div className="mb-6">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">Business Plan</h3>
-              <div className="mb-4">
-                <span className="text-3xl font-bold text-gray-900">$19</span>
-                <span className="text-gray-600">/month</span>
-              </div>
-            </div>
-
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-start">
-                <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">Unlimited invoices per month</span>
-              </li>
-              <li className="flex items-start">
-                <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">Premium templates</span>
-              </li>
-              <li className="flex items-start">
-                <CheckIcon className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-700">Priority support</span>
-              </li>
-            </ul>
-
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                handlePlanChange('business');
-              }}
-              className="w-full py-3 px-4 rounded-lg font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
-            >
-              Select Business Plan
-            </button>
-          </div>
+            );
+          })}
         </div>
       </div>
+
+      {/* Usage Warning */}
+      {usage && currentPlan === 'free' && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+          <div className="flex items-start">
+            <ArrowUpIcon className="w-6 h-6 text-yellow-600 mr-3 mt-0.5" />
+            <div>
+              <h3 className="text-lg font-medium text-yellow-900 mb-2">
+                Approaching Plan Limits
+              </h3>
+              <p className="text-yellow-800 mb-4">
+                You've used {usage.invoicesThisMonth} of your {SUBSCRIPTION_PLANS.free.limits.invoices} monthly invoices. 
+                Upgrade to Pro for unlimited invoices and premium features.
+              </p>
+              <button
+                onClick={() => handleUpgrade('pro')}
+                disabled={createCheckoutSession.isPending}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                Upgrade to Pro
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Billing Information */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing Information</h2>
-        
-        <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-          <div className="flex items-center">
-            <CreditCardIcon className="w-8 h-8 text-gray-400 mr-3" />
-            <div>
-              <p className="font-medium text-gray-900">•••• •••• •••• 4242</p>
-              <p className="text-sm text-gray-600">Expires 12/25</p>
+      {customer && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing Information</h2>
+          
+          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+            <div className="flex items-center">
+              <CreditCardIcon className="w-8 h-8 text-gray-400 mr-3" />
+              <div>
+                <p className="font-medium text-gray-900">Stripe Customer</p>
+                <p className="text-sm text-gray-600">ID: {customer.stripe_customer_id}</p>
+              </div>
             </div>
+            <button
+              onClick={handleManageBilling}
+              disabled={createPortalSession.isPending}
+              className="text-blue-600 hover:text-blue-700 font-medium"
+            >
+              {createPortalSession.isPending ? 'Loading...' : 'Manage'}
+            </button>
           </div>
-          <button className="text-green-600 hover:text-green-700 font-medium">
-            Update
-          </button>
         </div>
-
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Need to upgrade?</h4>
-          <p className="text-sm text-blue-700 mb-3">
-            Get unlimited invoices, premium templates, and priority support with our Business Plan.
-          </p>
-          <button
-            onClick={() => handlePlanChange('pro')}
-            className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm"
-          >
-            <ArrowUpIcon className="w-4 h-4 mr-1" />
-            Upgrade to Pro
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

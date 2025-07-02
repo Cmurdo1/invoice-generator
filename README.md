@@ -1,6 +1,6 @@
 # HonestInvoice - Professional Invoice Generator
 
-A modern, full-featured invoice generator built with React, TypeScript, and Supabase.
+A modern, full-featured invoice generator built with React, TypeScript, Supabase, and Stripe.
 
 ## Features
 
@@ -8,7 +8,7 @@ A modern, full-featured invoice generator built with React, TypeScript, and Supa
 - 📊 **Dashboard** - Overview of invoices, clients, and revenue
 - 📄 **Invoice Management** - Create, edit, send, and track invoices
 - 👥 **Client Management** - Organize and manage client information
-- 💳 **Payment Tracking** - Monitor payment status and history
+- 💳 **Payment Processing** - Stripe integration for subscriptions and invoice payments
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
 - 🎨 **Modern UI** - Clean, professional interface with Tailwind CSS
 
@@ -18,6 +18,7 @@ A modern, full-featured invoice generator built with React, TypeScript, and Supa
 - **Styling**: Tailwind CSS, Radix UI
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: Supabase Auth
+- **Payments**: Stripe (subscriptions + one-time payments)
 - **State Management**: TanStack Query (React Query)
 - **Forms**: React Hook Form + Zod validation
 - **Routing**: React Router v6
@@ -29,6 +30,7 @@ A modern, full-featured invoice generator built with React, TypeScript, and Supa
 - Node.js 18+ 
 - npm or yarn
 - Supabase account
+- Stripe account
 
 ### Installation
 
@@ -48,10 +50,20 @@ npm install
 cp .env.example .env
 ```
 
-4. Configure your Supabase project:
+4. Configure your services:
+
+   **Supabase Setup:**
    - Create a new project at [supabase.com](https://supabase.com)
    - Copy your project URL and anon key to `.env`
-   - Run the SQL migration in `supabase/migrations/001_initial_schema.sql`
+   - Run the SQL migrations in the Supabase SQL editor:
+     - `supabase/migrations/20250701235308_calm_coast.sql`
+     - `supabase/migrations/20250702000000_add_stripe_tables.sql`
+
+   **Stripe Setup:**
+   - Create a Stripe account at [stripe.com](https://stripe.com)
+   - Get your publishable and secret keys from the Stripe dashboard
+   - Create subscription products and copy the price IDs
+   - Add all Stripe configuration to `.env`
 
 5. Start the development server:
 ```bash
@@ -60,30 +72,54 @@ npm run dev
 
 ## Database Schema
 
-The application uses three main entities:
+The application uses these main entities:
 
-### Profiles
-- User profile information
-- Company details
-- Subscription status
+### Core Tables
+- **Profiles** - User profile information and subscription status
+- **Clients** - Client contact information and billing addresses
+- **Invoices** - Invoice details, line items, and payment tracking
 
-### Clients
-- Client contact information
-- Company details
-- Billing addresses
+### Stripe Integration Tables
+- **stripe_customers** - Links users to Stripe customer records
+- **stripe_invoices** - Tracks Stripe payment data for invoices
 
-### Invoices
-- Invoice details and line items
-- Payment tracking
-- Status management (draft, sent, paid, overdue)
+## Stripe Integration
+
+### Subscription Plans
+- **Free**: 5 invoices/month, basic features
+- **Pro**: Unlimited invoices, premium features ($19/month)
+- **Business**: Everything in Pro + team features ($49/month)
+
+### Payment Features
+- Subscription management with Stripe Checkout
+- Customer portal for billing management
+- One-time invoice payments
+- Automatic subscription status sync
+- Usage tracking and limits enforcement
+
+### Webhook Handling
+Set up webhooks in your Stripe dashboard to handle:
+- `customer.subscription.created`
+- `customer.subscription.updated` 
+- `customer.subscription.deleted`
+- `invoice.payment_succeeded`
+- `invoice.payment_failed`
 
 ## Environment Variables
 
 ```env
+# Supabase
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-VITE_STRIPE_PRO_LINK=your_stripe_pro_payment_link (optional)
-VITE_STRIPE_BUSINESS_LINK=your_stripe_business_payment_link (optional)
+
+# Stripe (Client-side)
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+VITE_STRIPE_PRO_PRICE_ID=price_your_pro_plan_price_id
+VITE_STRIPE_BUSINESS_PRICE_ID=price_your_business_plan_price_id
+
+# Stripe (Server-side - for API routes)
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 ```
 
 ## Deployment
@@ -93,6 +129,21 @@ The application can be deployed to any static hosting provider:
 - **Netlify**: Connect your repository and deploy automatically
 - **Vercel**: Import your project and deploy with zero configuration
 - **Cloudflare Pages**: Connect your repository for automatic deployments
+
+### Important Notes for Deployment:
+1. Set up all environment variables in your hosting provider
+2. Configure Stripe webhooks to point to your deployed API endpoints
+3. Update CORS settings in Supabase for your production domain
+4. Test payment flows in Stripe's test mode before going live
+
+## API Routes (Required for Stripe)
+
+You'll need to implement these API endpoints for full Stripe functionality:
+
+- `POST /api/stripe/create-checkout-session` - Create subscription checkout
+- `POST /api/stripe/create-portal-session` - Create customer portal session
+- `POST /api/stripe/create-invoice-payment` - Create one-time payment for invoices
+- `POST /api/stripe/webhooks` - Handle Stripe webhooks
 
 ## Contributing
 
