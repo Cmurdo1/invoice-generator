@@ -32,6 +32,7 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Pro',
     price: 19,
     priceId: import.meta.env.VITE_STRIPE_PRO_PRICE_ID,
+    paymentLink: import.meta.env.VITE_STRIPE_PRO_LINK,
     features: [
       'Unlimited invoices',
       'Premium templates',
@@ -51,6 +52,7 @@ export const SUBSCRIPTION_PLANS = {
     name: 'Business',
     price: 49,
     priceId: import.meta.env.VITE_STRIPE_BUSINESS_PRICE_ID,
+    paymentLink: import.meta.env.VITE_STRIPE_BUSINESS_LINK,
     features: [
       'Everything in Pro',
       'Multi-user access',
@@ -121,5 +123,15 @@ export const createCustomerPortalSession = async (customerId: string) => {
   } catch (error) {
     console.error('Error creating portal session:', error);
     throw error;
+  }
+};
+
+// Helper function to redirect to Stripe payment link
+export const redirectToStripePayment = (planId: SubscriptionPlan) => {
+  const plan = SUBSCRIPTION_PLANS[planId];
+  if (plan.paymentLink) {
+    window.open(plan.paymentLink, '_blank');
+  } else {
+    throw new Error(`No payment link configured for ${planId} plan`);
   }
 };

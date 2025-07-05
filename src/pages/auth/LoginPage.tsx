@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, loading } = useAuth();
+  const { signIn, loading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -52,9 +52,11 @@ const LoginPage: React.FC = () => {
       return;
     }
 
-    const success = await login(formData.email, formData.password);
-    if (success) {
+    const { error } = await signIn(formData.email, formData.password);
+    if (!error) {
       navigate('/dashboard');
+    } else {
+      setErrors({ submit: error });
     }
   };
 
@@ -150,6 +152,13 @@ const LoginPage: React.FC = () => {
               </a>
             </div>
 
+            {/* Submit Error */}
+            {errors.submit && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600">{errors.submit}</p>
+              </div>
+            )}
+
             {/* Submit button */}
             <button
               type="submit"
@@ -160,14 +169,14 @@ const LoginPage: React.FC = () => {
             </button>
           </form>
 
-          {/* Firebase Authentication Info */}
+          {/* Supabase Authentication Info */}
           <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-            <h4 className="text-sm font-medium text-green-900 mb-2">🔥 Firebase Authentication</h4>
-            <p className="text-sm text-green-700 mb-2">Secure authentication powered by Firebase</p>
+            <h4 className="text-sm font-medium text-green-900 mb-2">🔒 Secure Authentication</h4>
+            <p className="text-sm text-green-700 mb-2">Powered by Supabase for enterprise-grade security</p>
             <div className="text-sm text-green-600 space-y-1">
               <p><strong>✅ Secure:</strong> Industry-standard authentication</p>
               <p><strong>✅ Fast:</strong> Instant sign-in and sign-up</p>
-              <p className="text-xs text-green-500 mt-2">Create an account or sign in with your existing credentials</p>
+              <p className="text-xs text-green-500 mt-2">Your data is protected with bank-level encryption</p>
             </div>
           </div>
 

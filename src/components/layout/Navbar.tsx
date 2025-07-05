@@ -12,13 +12,12 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationsContext';
 
 const Navbar: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const {
     notifications,
     unreadCount,
-    addNotification,
     markAsRead,
     markAllAsRead
   } = useNotifications();
@@ -107,8 +106,10 @@ const Navbar: React.FC = () => {
             >
               <UserCircleIcon className="w-8 h-8" />
               <div className="hidden md:block text-left">
-                <p className="text-sm font-medium">{user?.name}</p>
-                <p className="text-xs text-gray-500 capitalize">{user?.subscription?.plan ? `${user.subscription.plan} Plan` : 'No Plan'}</p>
+                <p className="text-sm font-medium">{profile?.name || user?.email}</p>
+                <p className="text-xs text-gray-500 capitalize">
+                  {profile?.subscription_plan ? `${profile.subscription_plan} Plan` : 'Free Plan'}
+                </p>
               </div>
               <ChevronDownIcon className="w-4 h-4" />
             </button>
@@ -116,8 +117,11 @@ const Navbar: React.FC = () => {
             {userMenuOpen && (
               <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                 <div className="px-4 py-2 border-b border-gray-200">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                  <p className="text-sm font-medium text-gray-900">{profile?.name || 'User'}</p>
                   <p className="text-sm text-gray-500">{user?.email}</p>
+                  <p className="text-xs text-gray-400 capitalize mt-1">
+                    {profile?.subscription_plan || 'free'} plan
+                  </p>
                 </div>
                 
                 <Link
@@ -138,10 +142,19 @@ const Navbar: React.FC = () => {
                   Settings
                 </Link>
                 
+                <Link
+                  to="/subscription"
+                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  onClick={() => setUserMenuOpen(false)}
+                >
+                  <CogIcon className="w-4 h-4 mr-2" />
+                  Subscription
+                </Link>
+                
                 <div className="border-t border-gray-200 mt-1">
                   <button
                     onClick={() => {
-                      logout();
+                      signOut();
                       setUserMenuOpen(false);
                     }}
                     className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"

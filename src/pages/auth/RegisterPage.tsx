@@ -5,7 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { register, loading } = useAuth();
+  const { signUp, loading } = useAuth();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -73,15 +73,19 @@ const RegisterPage: React.FC = () => {
       return;
     }
 
-    const success = await register({
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      password: formData.password,
-      company: formData.company.trim()
-    });
+    const { error } = await signUp(
+      formData.email.trim(),
+      formData.password,
+      {
+        name: formData.name.trim(),
+        company: formData.company.trim()
+      }
+    );
 
-    if (success) {
+    if (!error) {
       navigate('/dashboard');
+    } else {
+      setErrors({ submit: error });
     }
   };
 
@@ -100,21 +104,21 @@ const RegisterPage: React.FC = () => {
             <h2 className="text-4xl font-bold mb-6">
               Join Thousands of Businesses
             </h2>
-            <p className="text-xl text-blue-100 mb-8 max-w-md">
+            <p className="text-xl text-green-100 mb-8 max-w-md">
               Start creating professional invoices today and get paid faster than ever before.
             </p>
             <div className="space-y-4 max-w-md">
               <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
                 <CheckIcon className="w-6 h-6 text-green-300" />
-                <span className="text-green-100">The first known invoice dates back to 3000 BC in Mesopotamia</span>
+                <span className="text-green-100">Free plan includes 5 invoices per month</span>
               </div>
               <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
                 <CheckIcon className="w-6 h-6 text-green-300" />
-                <span className="text-green-100">Electronic invoices can reduce processing costs by 60-80%</span>
+                <span className="text-green-100">Professional templates and branding</span>
               </div>
               <div className="flex items-center space-x-3 bg-white/10 backdrop-blur-sm rounded-lg p-3">
                 <CheckIcon className="w-6 h-6 text-green-300" />
-                <span className="text-green-100">90% of businesses say faster invoicing improves cash flow</span>
+                <span className="text-green-100">Secure payment tracking and management</span>
               </div>
             </div>
           </div>
@@ -140,7 +144,7 @@ const RegisterPage: React.FC = () => {
             Create your account
           </h1>
           <p className="text-center text-gray-600 mb-8">
-            Sign Up today
+            Start with our free plan - no credit card required
           </p>
         </div>
 
@@ -316,6 +320,13 @@ const RegisterPage: React.FC = () => {
               )}
             </div>
 
+            {/* Submit Error */}
+            {errors.submit && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                <p className="text-sm text-red-600">{errors.submit}</p>
+              </div>
+            )}
+
             {/* Submit button */}
             <button
               type="submit"
@@ -325,6 +336,18 @@ const RegisterPage: React.FC = () => {
               {loading ? 'Creating account...' : 'Create account'}
             </button>
           </form>
+
+          {/* Free Plan Benefits */}
+          <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+            <h4 className="text-sm font-medium text-green-900 mb-2">🎉 Free Plan Includes:</h4>
+            <ul className="text-sm text-green-700 space-y-1">
+              <li>• 5 invoices per month</li>
+              <li>• Up to 10 clients</li>
+              <li>• Professional templates</li>
+              <li>• PDF downloads</li>
+              <li>• No credit card required</li>
+            </ul>
+          </div>
 
           {/* Sign in link */}
           <p className="mt-8 text-center text-sm text-gray-600">

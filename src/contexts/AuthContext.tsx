@@ -3,20 +3,42 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import toast from 'react-hot-toast';
 
+interface UserProfile {
+  id: string;
+  email: string;
+  name?: string;
+  company?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  country?: string;
+  avatar_url?: string;
+  subscription_plan: string;
+  subscription_status: string;
+  stripe_customer_id?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface AuthContextType {
   user: User | null;
+  profile: UserProfile | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, name?: string, company?: string) => Promise<{ error?: string }>;
+  signUp: (email: string, password: string, userData?: { name?: string; company?: string }) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
-  updateProfile: (data: any) => Promise<{ error?: string }>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<{ error?: string }>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,7 +47,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
     // Listen for auth changes
@@ -34,21 +60,81 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
+      
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+        setLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name?: string, company?: string) => {
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        // If profile doesn't exist, create one
+        if (error.code === 'PGRST116') {
+          await createProfile(userId);
+        }
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error in fetchProfile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createProfile = async (userId: string) => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const user = userData.user;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: userId,
+            email: user?.email || '',
+            name: user?.user_metadata?.name || '',
+            company: user?.user_metadata?.company || '',
+            subscription_plan: 'free',
+            subscription_status: 'active',
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating profile:', error);
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error('Error in createProfile:', error);
+    }
+  };
+
+  const signUp = async (email: string, password: string, userData?: { name?: string; company?: string }) => {
     try {
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name: name || '',
-            company: company || '',
+            name: userData?.name || '',
+            company: userData?.company || '',
           },
         },
       });
@@ -88,6 +174,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         toast.error(error.message);
       } else {
+        setProfile(null);
         toast.success('Signed out successfully');
       }
     } catch (error: any) {
@@ -95,7 +182,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateProfile = async (data: any) => {
+  const updateProfile = async (data: Partial<UserProfile>) => {
     try {
       if (!user) {
         return { error: 'No user logged in' };
@@ -103,13 +190,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { error } = await supabase
         .from('profiles')
-        .update(data)
+        .update({ ...data, updated_at: new Date().toISOString() })
         .eq('id', user.id);
 
       if (error) {
         return { error: error.message };
       }
 
+      // Refresh profile data
+      await fetchProfile(user.id);
       toast.success('Profile updated successfully');
       return {};
     } catch (error: any) {
@@ -117,14 +206,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchProfile(user.id);
+    }
+  };
+
   const value = {
     user,
+    profile,
     session,
     loading,
     signUp,
     signIn,
     signOut,
     updateProfile,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

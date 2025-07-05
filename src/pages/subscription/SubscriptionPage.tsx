@@ -5,46 +5,43 @@ import {
   CalendarDaysIcon,
   ArrowUpIcon,
   SparklesIcon,
-  CogIcon
+  CogIcon,
+  ExternalLinkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
-import { useStripeCustomer, useCreateCheckoutSession, useCreatePortalSession, useSubscriptionUsage } from '@/hooks/useStripe';
-import { SUBSCRIPTION_PLANS } from '@/lib/stripe';
+import { useSubscription, useSubscriptionUsage } from '@/hooks/useSubscription';
+import { SUBSCRIPTION_PLANS, redirectToStripePayment } from '@/lib/stripe';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 
 const SubscriptionPage: React.FC = () => {
   const { user } = useAuth();
-  const { data: customer, isLoading: customerLoading } = useStripeCustomer();
+  const { data: subscription, isLoading: subscriptionLoading } = useSubscription();
   const { data: usage, isLoading: usageLoading } = useSubscriptionUsage();
-  const createCheckoutSession = useCreateCheckoutSession();
-  const createPortalSession = useCreatePortalSession();
+  const [upgrading, setUpgrading] = useState<string | null>(null);
 
-  const currentPlan = customer?.subscription_plan || 'free';
-  const isActive = customer?.subscription_status === 'active';
+  const currentPlan = subscription?.plan || 'free';
+  const isActive = subscription?.status === 'active';
 
   const handleUpgrade = async (planId: string) => {
-    const plan = SUBSCRIPTION_PLANS[planId as keyof typeof SUBSCRIPTION_PLANS];
-    if (!plan.priceId) {
-      toast.error('Price ID not configured for this plan');
-      return;
-    }
-
     try {
-      await createCheckoutSession.mutateAsync({
-        priceId: plan.priceId,
-        planId: planId,
-      });
-    } catch (error) {
+      setUpgrading(planId);
+      redirectToStripePayment(planId as keyof typeof SUBSCRIPTION_PLANS);
+      toast.success('Redirecting to Stripe checkout...');
+    } catch (error: any) {
       console.error('Upgrade error:', error);
+      toast.error(error.message || 'Failed to start upgrade process');
+    } finally {
+      setUpgrading(null);
     }
   };
 
-  const handleManageBilling = async () => {
-    try {
-      await createPortalSession.mutateAsync();
-    } catch (error) {
-      console.error('Portal error:', error);
+  const handleManageBilling = () => {
+    if (subscription?.stripe_customer_id) {
+      // Redirect to Stripe customer portal
+      window.open('https://billing.stripe.com/p/login/test_your_portal_link', '_blank');
+    } else {
+      toast.error('No billing information found');
     }
   };
 
@@ -62,7 +59,7 @@ const SubscriptionPage: React.FC = () => {
     return Math.min((used / limit) * 100, 100);
   };
 
-  if (customerLoading || usageLoading) {
+  if (subscriptionLoading || usageLoading) {
     return <LoadingSpinner text="Loading subscription details..." />;
   }
 
@@ -86,10 +83,9 @@ const SubscriptionPage: React.FC = () => {
             }`}>
               {isActive ? 'Active' : 'Inactive'}
             </span>
-            {customer && (
+            {subscription?.stripe_customer_id && (
               <button
                 onClick={handleManageBilling}
-                disabled={createPortalSession.isPending}
                 className="flex items-center px-3 py-1 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 <CogIcon className="w-4 h-4 mr-1" />
@@ -108,10 +104,10 @@ const SubscriptionPage: React.FC = () => {
               ${SUBSCRIPTION_PLANS[currentPlan].price}
               <span className="text-base font-normal text-gray-600">/month</span>
             </p>
-            {customer?.current_period_end && (
+            {subscription?.current_period_end && (
               <div className="flex items-center text-sm text-gray-600 mb-4">
                 <CalendarDaysIcon className="w-4 h-4 mr-2" />
-                Next billing: {formatDate(customer.current_period_end)}
+                Next billing: {formatDate(subscription.current_period_end)}
               </div>
             )}
           </div>
@@ -185,6 +181,7 @@ const SubscriptionPage: React.FC = () => {
           {Object.entries(SUBSCRIPTION_PLANS).map(([planId, plan]) => {
             const isCurrentPlan = currentPlan === planId;
             const isPopular = planId === 'pro';
+            const isUpgrading = upgrading === planId;
             
             return (
               <div
@@ -229,8 +226,8 @@ const SubscriptionPage: React.FC = () => {
 
                 <button
                   onClick={() => handleUpgrade(planId)}
-                  disabled={isCurrentPlan || createCheckoutSession.isPending || planId === 'free'}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
+                  disabled={isCurrentPlan || isUpgrading || planId === 'free'}
+                  className={`w-full py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center ${
                     isCurrentPlan
                       ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
                       : planId === 'free'
@@ -238,13 +235,18 @@ const SubscriptionPage: React.FC = () => {
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
                   }`}
                 >
-                  {isCurrentPlan
-                    ? 'Current Plan'
-                    : planId === 'free'
-                    ? 'Free Plan'
-                    : createCheckoutSession.isPending
-                    ? 'Loading...'
-                    : `Upgrade to ${plan.name}`}
+                  {isCurrentPlan ? (
+                    'Current Plan'
+                  ) : planId === 'free' ? (
+                    'Free Plan'
+                  ) : isUpgrading ? (
+                    'Redirecting...'
+                  ) : (
+                    <>
+                      Upgrade to {plan.name}
+                      <ExternalLinkIcon className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </button>
               </div>
             );
@@ -253,7 +255,7 @@ const SubscriptionPage: React.FC = () => {
       </div>
 
       {/* Usage Warning */}
-      {usage && currentPlan === 'free' && (
+      {usage && currentPlan === 'free' && usage.remainingInvoices <= 2 && usage.remainingInvoices > 0 && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <div className="flex items-start">
             <ArrowUpIcon className="w-6 h-6 text-yellow-600 mr-3 mt-0.5" />
@@ -262,15 +264,16 @@ const SubscriptionPage: React.FC = () => {
                 Approaching Plan Limits
               </h3>
               <p className="text-yellow-800 mb-4">
-                You've used {usage.invoicesThisMonth} of your {SUBSCRIPTION_PLANS.free.limits.invoices} monthly invoices. 
+                You have {usage.remainingInvoices} invoice{usage.remainingInvoices === 1 ? '' : 's'} remaining this month. 
                 Upgrade to Pro for unlimited invoices and premium features.
               </p>
               <button
                 onClick={() => handleUpgrade('pro')}
-                disabled={createCheckoutSession.isPending}
-                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                disabled={upgrading === 'pro'}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center"
               >
-                Upgrade to Pro
+                {upgrading === 'pro' ? 'Redirecting...' : 'Upgrade to Pro'}
+                <ExternalLinkIcon className="w-4 h-4 ml-2" />
               </button>
             </div>
           </div>
@@ -278,7 +281,7 @@ const SubscriptionPage: React.FC = () => {
       )}
 
       {/* Billing Information */}
-      {customer && (
+      {subscription?.stripe_customer_id && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Billing Information</h2>
           
@@ -287,15 +290,15 @@ const SubscriptionPage: React.FC = () => {
               <CreditCardIcon className="w-8 h-8 text-gray-400 mr-3" />
               <div>
                 <p className="font-medium text-gray-900">Stripe Customer</p>
-                <p className="text-sm text-gray-600">ID: {customer.stripe_customer_id}</p>
+                <p className="text-sm text-gray-600">Manage your billing and payment methods</p>
               </div>
             </div>
             <button
               onClick={handleManageBilling}
-              disabled={createPortalSession.isPending}
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-blue-600 hover:text-blue-700 font-medium flex items-center"
             >
-              {createPortalSession.isPending ? 'Loading...' : 'Manage'}
+              Manage
+              <ExternalLinkIcon className="w-4 h-4 ml-1" />
             </button>
           </div>
         </div>
