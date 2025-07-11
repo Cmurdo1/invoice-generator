@@ -42,6 +42,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Check if Supabase is configured
+  if (!supabase) {
+    return (
+      <div className="min-h-screen bg-red-50 flex items-center justify-center">
+        <div className="text-center p-8">
+          <h1 className="text-2xl font-bold text-red-900 mb-4">Configuration Error</h1>
+          <p className="text-red-700 mb-4">Supabase environment variables are missing.</p>
+          <p className="text-sm text-red-600">Please check your .env file and ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are set.</p>
+        </div>
+      </div>
+    );
+  }
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -58,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.id);
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -74,6 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -87,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await createProfile(userId);
         }
       } else {
+        console.log('Profile loaded:', data);
         setProfile(data);
       }
     } catch (error) {

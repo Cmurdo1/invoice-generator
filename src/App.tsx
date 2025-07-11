@@ -36,7 +36,11 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   if (!user) {
@@ -61,7 +65,11 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    );
   }
 
   if (user) {
