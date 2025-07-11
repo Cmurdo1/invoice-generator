@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription, useSubscriptionUsage } from '@/hooks/useSubscription';
-import { SUBSCRIPTION_PLANS, redirectToStripePayment } from '@/lib/stripe';
+import { SUBSCRIPTION_PLANS, upgradeSubscription, createCustomerPortalSession } from '@/lib/stripe';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import toast from 'react-hot-toast';
 
@@ -26,8 +26,7 @@ const SubscriptionPage: React.FC = () => {
   const handleUpgrade = async (planId: string) => {
     try {
       setUpgrading(planId);
-      redirectToStripePayment(planId as keyof typeof SUBSCRIPTION_PLANS);
-      toast.success('Redirecting to Stripe checkout...');
+      await upgradeSubscription(planId as keyof typeof SUBSCRIPTION_PLANS);
     } catch (error: any) {
       console.error('Upgrade error:', error);
       toast.error(error.message || 'Failed to start upgrade process');
@@ -36,12 +35,13 @@ const SubscriptionPage: React.FC = () => {
     }
   };
 
-  const handleManageBilling = () => {
-    if (subscription?.stripe_customer_id) {
-      // Redirect to Stripe customer portal
-      window.open('https://billing.stripe.com/p/login/test_your_portal_link', '_blank');
-    } else {
-      toast.error('No billing information found');
+  const handleManageBilling = async () => {
+    try {
+      const portalUrl = await createCustomerPortalSession();
+      window.open(portalUrl, '_blank');
+    } catch (error: any) {
+      console.error('Portal error:', error);
+      toast.error(error.message || 'Failed to open billing portal');
     }
   };
 

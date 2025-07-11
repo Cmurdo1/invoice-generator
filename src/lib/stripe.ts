@@ -1,4 +1,5 @@
 import { loadStripe } from '@stripe/stripe-js';
+import { supabase } from './supabase'
 
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
 
@@ -73,16 +74,21 @@ export const SUBSCRIPTION_PLANS = {
 export type SubscriptionPlan = keyof typeof SUBSCRIPTION_PLANS;
 
 // Helper function to create checkout session
-export const createCheckoutSession = async (priceId: string, customerId?: string) => {
+export const createCheckoutSession = async (priceId: string) => {
   try {
-    const response = await fetch('/api/stripe/create-checkout-session', {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout-session`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
         priceId,
-        customerId,
         successUrl: `${window.location.origin}/subscription?success=true`,
         cancelUrl: `${window.location.origin}/subscription?canceled=true`,
       }),
@@ -101,15 +107,20 @@ export const createCheckoutSession = async (priceId: string, customerId?: string
 };
 
 // Helper function to create customer portal session
-export const createCustomerPortalSession = async (customerId: string) => {
+export const createCustomerPortalSession = async () => {
   try {
-    const response = await fetch('/api/stripe/create-portal-session', {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-portal-session`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({
-        customerId,
         returnUrl: `${window.location.origin}/subscription`,
       }),
     });
@@ -135,3 +146,30 @@ export const redirectToStripePayment = (planId: SubscriptionPlan) => {
     throw new Error(`No payment link configured for ${planId} plan`);
   }
 };
+
+// Helper function to upgrade subscription using Stripe Checkout
+export const upgradeSubscription = async (planId: SubscriptionPlan) => {
+  const plan = SUBSCRIPTION_PLANS[planId]
+  
+  if (!plan.priceId) {
+    throw new Error(`No price ID configured for ${planId} plan`)
+  }
+
+  try {
+    const sessionId = await createCheckoutSession(plan.priceId)
+    
+    if (!stripePromise) {
+      throw new Error('Stripe not initialized')
+    }
+
+    const stripe = await stripePromise
+    const { error } = await stripe!.redirectToCheckout({ sessionId })
+    
+    if (error) {
+      throw error
+    }
+  } catch (error) {
+    console.error('Upgrade error:', error)
+    throw error
+  }
+}
